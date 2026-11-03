@@ -1,0 +1,76 @@
+name: Deploy API to ECS
+
+on:
+  workflow_run:
+    workflows: ['API CI']
+    types: [completed]
+    branches: [main]
+
+permissions:
+  id-token: write # required for OIDC
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: pokemoves-api
+  ECS_CLUSTER: pokemoves-cluster
+  ECS_SERVICE: pokemoves-api-service
+  HEALTH_URL: https://pokemoves-api.costo.so/healthz
+
+concurrency:
+  group: ecs-deploy-api
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Only deploy once CI has passed on main; skip on CI failure/cancellation
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          # Deploy the exact commit CI validated, not main's current HEAD
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          docker buildx build --platform linux/amd64 \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            --push ./api
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Fill in task definition template
+        env:
+          IMAGE: ${{ steps.build-image.outputs.image }}
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          sed -e "s/<ACCOUNT_ID>/${ACCOUNT_ID}/g" \
+              -e "s#<IMAGE>#${IMAGE}#g" \
+              infra/task-definition.template.json > task-definition.json
+
+      - name: Deploy new task definition to ECS service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: task-definition.json
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Smoke test the live URL
+        run: curl --fail --silent --show-error --retry 5 --retry-delay 5 --retry-all-errors "$HEALTH_URL"
