@@ -1,0 +1,44 @@
+openapi: 3.0.3
+info:
+  title: Pokémoves API
+  version: 0.1.0
+
+paths:
+  /healthz:
+    get:
+      operationId: getHealth
+      summary: Liveness check used by the load balancer
+      tags: [ops]
+      responses:
+        '200':
+          description: The process is up
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+
+components:
+  schemas:
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: ok
+
+    ErrorDetail:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
