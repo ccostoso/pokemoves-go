@@ -13,5 +13,5 @@ func NewRouter() http.Handler {
 	mux.HandleFunc("/healthz", HealthHandler)
 
 	// Additional routes can be registered here.
-	return mux
+	return requestID(logRequests(recoverer(mux)))
 }

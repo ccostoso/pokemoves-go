@@ -18,8 +18,10 @@ func main() {
 	// Set up structured logging with JSON output.
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 
+	// Load the application configuration.
 	cfg := config.Load()
 
+	// Initialize the HTTP server with the configured address and router.
 	srv := &http.Server{
 		Addr:              ":" + cfg.Port,
 		Handler:           httpapi.NewRouter(),
@@ -43,6 +45,7 @@ func main() {
 	<-ctx.Done()
 	slog.Info("shutting down")
 
+	// Create a context with a timeout for the server shutdown.
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(shutdownCtx); err != nil {
