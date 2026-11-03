@@ -10,7 +10,7 @@ func NewRouter() http.Handler {
 	mux := http.NewServeMux()
 
 	// Register the health check endpoint.
-	mux.HandleFunc("/healthz", HealthHandler)
+	mux.HandleFunc("GET /healthz", HealthHandler)
 
 	// Additional routes can be registered here.
 	return requestID(logRequests(recoverer(mux)))
