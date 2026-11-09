@@ -10,7 +10,7 @@
             "Condition": {
                 "StringEquals": {
                     "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-                    "token.actions.githubusercontent.com:sub": "repo:ccostoso/pokemoves-go:ref:refs/heads/main"
+                    "token.actions.githubusercontent.com:sub": "repo:ccostoso@53443819/pokemoves-go@1444871713:ref:refs/heads/main"
                 }
             }
         }
