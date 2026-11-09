@@ -17,6 +17,69 @@ paths:
               schema:
                 $ref: '#/components/schemas/Health'
 
+  /api/pokemon:
+    get:
+      operationId: listPokemon
+      summary: List Pokémon available in a version group
+      tags: [pokemon]
+      parameters:
+        - name: versionGroup
+          in: query
+          required: true
+          description: Version group slug, e.g. `red-blue`.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Pokémon in the version group
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PokemonListItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '502':
+          $ref: '#/components/responses/UpstreamError'
+
+  /api/learnsets/level-up:
+    get:
+      operationId: getLevelUpLearnset
+      summary: Level-up moves for a Pokémon in a version group
+      tags: [pokemon]
+      parameters:
+        - name: pokemon
+          in: query
+          required: true
+          description: Pokémon API name, e.g. `pikachu`.
+          schema:
+            type: string
+        - name: versionGroup
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Level-up learnset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelUpLearnset'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: >-
+            No learnset for this Pokémon in this version group (error code
+            `not_found`). The message names the combination that failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          $ref: '#/components/responses/UpstreamError'
+
 components:
   schemas:
     Health:
@@ -42,3 +105,85 @@ components:
       properties:
         error:
           $ref: '#/components/schemas/ErrorDetail'
+
+    LocalizedName:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+
+    NamedResource:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+
+    Species:
+      type: object
+      required: [names]
+      properties:
+        names:
+          type: array
+          items: { $ref: '#/components/schemas/LocalizedName' }
+
+    PokemonListItem:
+      type: object
+      required: [id, name, species]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        species: { $ref: '#/components/schemas/Species' }
+
+    Move:
+      type: object
+      required: [name, type, movenames]
+      properties:
+        name: { type: string }
+        type: { $ref: '#/components/schemas/NamedResource' }
+        movenames:
+          type: array
+          items: { $ref: '#/components/schemas/LocalizedName' }
+
+    LevelUpMove:
+      type: object
+      required: [level, movelearnmethod, move]
+      properties:
+        level: { type: integer }
+        movelearnmethod: { $ref: '#/components/schemas/NamedResource' }
+        move: { $ref: '#/components/schemas/Move' }
+
+    LearnsetPokemon:
+      type: object
+      required: [id, name, pokemonmoves, species]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        pokemonmoves:
+          type: array
+          items: { $ref: '#/components/schemas/LevelUpMove' }
+        species: { $ref: '#/components/schemas/Species' }
+
+    LevelUpLearnset:
+      type: object
+      required: [pokemonName, versionGroupName, pokemon]
+      properties:
+        pokemonName: { type: string }
+        versionGroupName: { type: string }
+        pokemon:
+          type: array
+          items: { $ref: '#/components/schemas/LearnsetPokemon' }
+
+  responses:
+    BadRequest:
+      description: Invalid or missing query parameter (error code `invalid_request`)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    UpstreamError:
+      description: PokeAPI failed or returned nothing usable (error code `upstream_error`)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

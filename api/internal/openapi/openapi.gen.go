@@ -19,3 +19,73 @@ type Health struct {
 	// Status Example: ok
 	Status string `json:"status"`
 }
+
+// LearnsetPokemon defines model for LearnsetPokemon.
+type LearnsetPokemon struct {
+	Id           int           `json:"id"`
+	Name         string        `json:"name"`
+	Pokemonmoves []LevelUpMove `json:"pokemonmoves"`
+	Species      Species       `json:"species"`
+}
+
+// LevelUpLearnset defines model for LevelUpLearnset.
+type LevelUpLearnset struct {
+	Pokemon          []LearnsetPokemon `json:"pokemon"`
+	PokemonName      string            `json:"pokemonName"`
+	VersionGroupName string            `json:"versionGroupName"`
+}
+
+// LevelUpMove defines model for LevelUpMove.
+type LevelUpMove struct {
+	Level           int           `json:"level"`
+	Move            Move          `json:"move"`
+	Movelearnmethod NamedResource `json:"movelearnmethod"`
+}
+
+// LocalizedName defines model for LocalizedName.
+type LocalizedName struct {
+	Name string `json:"name"`
+}
+
+// Move defines model for Move.
+type Move struct {
+	Movenames []LocalizedName `json:"movenames"`
+	Name      string          `json:"name"`
+	Type      NamedResource   `json:"type"`
+}
+
+// NamedResource defines model for NamedResource.
+type NamedResource struct {
+	Name string `json:"name"`
+}
+
+// PokemonListItem defines model for PokemonListItem.
+type PokemonListItem struct {
+	Id      int     `json:"id"`
+	Name    string  `json:"name"`
+	Species Species `json:"species"`
+}
+
+// Species defines model for Species.
+type Species struct {
+	Names []LocalizedName `json:"names"`
+}
+
+// BadRequest defines model for BadRequest.
+type BadRequest = Error
+
+// UpstreamError defines model for UpstreamError.
+type UpstreamError = Error
+
+// GetLevelUpLearnsetParams defines parameters for GetLevelUpLearnset.
+type GetLevelUpLearnsetParams struct {
+	// Pokemon Pokémon API name, e.g. `pikachu`.
+	Pokemon      string `form:"pokemon" json:"pokemon"`
+	VersionGroup string `form:"versionGroup" json:"versionGroup"`
+}
+
+// ListPokemonParams defines parameters for ListPokemon.
+type ListPokemonParams struct {
+	// VersionGroup Version group slug, e.g. `red-blue`.
+	VersionGroup string `form:"versionGroup" json:"versionGroup"`
+}
